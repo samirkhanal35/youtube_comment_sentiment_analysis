@@ -3,6 +3,7 @@ import re
 import emoji
 import pandas as pd
 import streamlit as st
+import requests
 from googleapiclient.discovery import build
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from textblob import TextBlob
@@ -20,6 +21,21 @@ def is_valid_youtube_url(url):
         '(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})')
     youtube_regex_match = re.match(youtube_regex, url)
     return youtube_regex_match is not None
+
+
+# Function to check if video has comments enabled
+def check_comments_enabled(video_id, api_key, url):
+    url = url
+    params = {
+        'part': 'snippet,replies',
+        'maxResults': 1,
+        'videoId': video_id,
+        'key': api_key
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 403:
+        return False
+    return True
 
 # Function to extract video id from youtube video url
 
@@ -49,7 +65,9 @@ def get_comments(video_id: str, api_key: str):
     request = myYoutube.commentThreads().list(
         part='snippet, replies',
         maxResults=100,
-        videoId=video_id
+        videoId=video_id,
+        textFormat="plainText",
+        order="relevance"
     )
 
     while request:
@@ -66,7 +84,8 @@ def get_comments(video_id: str, api_key: str):
                 videoId=video_id,
                 textFormat="plainText",
                 maxResults=100,
-                pageToken=response['nextPageToken']
+                pageToken=response['nextPageToken'],
+                order="relevance"
             )
         else:
             break
@@ -86,11 +105,14 @@ def clean_comments(comment):
     return cleaned_comment.strip()
 
 
+# Function to detect language in the comments
 def detect_language(comment):
     try:
         return detect(comment)
     except LangDetectException:
         return 'unknown'
+
+# Function to translate the comment to english
 
 
 def translate_comment(comment, target_language='en'):
@@ -100,6 +122,8 @@ def translate_comment(comment, target_language='en'):
         return translation.text
     except Exception as e:
         return comment
+
+# Function to Perform sentiment analysis using text blob
 
 
 def text_blob_analyze_sentiment(comment):
@@ -113,6 +137,8 @@ def text_blob_analyze_sentiment(comment):
         return 1
     else:
         return 0
+
+# Function to Perform sentiment analysis using vader
 
 
 def vader_analyze_sentiment(comment):
@@ -145,7 +171,7 @@ def main():
         if is_valid_youtube_url(url):
             st.success("The URL '{url}' is a valid YouTube URL.")
             st.write("Selected number: {number}")
-            st.write("Extracting comments...")
+            st.write("Extracting video_id...")
 
             # # Load the .env file
             load_dotenv()
@@ -162,54 +188,82 @@ def main():
             video_id = extract_video_id(youtube_url)
 
             if video_id:
+                st.write("✔️")
                 st.write(f"The video ID is: {video_id}")
             else:
                 st.write("Video ID not found in the URL")
+                return
 
             # # getting all comments
-            # all_comments = get_comments(video_id, api_key)
+            st.write("Extracting comments...")
+            try:
+                all_comments = get_comments(video_id, api_key)
+            except:
+                st.error(
+                    "The Youtube video has disabled the comments. So cannot scrape the comments.")
+                return
             # # print("all comments:", all_comments)
 
             # # converting the comments into pandas dataframe
-            # df = pd.DataFrame(all_comments, columns=['comments'])
+            st.write("✔️")
+            st.write("Cleaning comments...")
+            df = pd.DataFrame(all_comments, columns=['comments'])
             # print("df head with emojis:", df.head())
 
             # # Replace emojis with their meanings
-            # df['comments'] = df['comments'].apply(clean_comments)
+            df['comments'] = df['comments'].apply(clean_comments)
             # print("df head with emojis replaced with their meanings:", df.head())
 
             # # Detect language of each comment
-            # df['Language'] = df['comments'].apply(detect_language)
+            st.write("✔️")
+            st.write("Detecting language of comments...")
+            df['Language'] = df['comments'].apply(detect_language)
 
             # # Translate comments to English if they are not in English
-            # df['Translated_Comment'] = df.apply(lambda row: translate_comment(
-            #     row['comments']) if row['Language'] != 'en' else row['comments'], axis=1)
+            st.write("✔️")
+            st.write("Translating comments to english...")
+            df['Translated_Comment'] = df.apply(lambda row: translate_comment(
+                row['comments']) if row['Language'] != 'en' else row['comments'], axis=1)
 
             # # Perform sentiment analysis on each comment using VADER
-            # df['sentiment_vader'] = df['comments'].apply(vader_analyze_sentiment)
+            st.write("✔️")
+            st.write("Performing sentiment analysis using VADER...")
+            df['sentiment_vader'] = df['comments'].apply(
+                vader_analyze_sentiment)
 
             # # Perform sentiment analysis on each comment using VADER
-            # df['sentiment_textblob'] = df['comments'].apply(text_blob_analyze_sentiment)
+            st.write("✔️")
+            st.write("Performing sentiment analysis using TextBlob...")
+            df['sentiment_textblob'] = df['comments'].apply(
+                text_blob_analyze_sentiment)
 
             # print("\nTranslated dataset with sentiments")
             # print(df[['Translated_Comment', 'sentiment_vader', 'sentiment_textblob']].head(10))
 
             # print("sentiment sums for vader sentiment analysis:")
-            # vader_valuecounts = df['sentiment_vader'].value_counts()
-            # total_count = len(df)
+            vader_valuecounts = df['sentiment_vader'].value_counts()
+            total_count = len(df)
             # print(vader_valuecounts)
-            # print("Sentiments:")
-            # print("Neutral:", (vader_valuecounts[0]/total_count)*100, '%')
-            # print("Positive:", (vader_valuecounts[1]/total_count)*100, '%')
-            # print("Negative:", (vader_valuecounts[-1]/total_count)*100, '%')
+            st.write("✔️")
+            st.write("Sentiments Using Vader:")
+            st.write("Neutral Comments :{:.2f}% ".format(
+                (vader_valuecounts[0]/total_count)*100))
+            st.write("Positive Comments :{:.2f}%".format(
+                (vader_valuecounts[1]/total_count)*100))
+            st.write("Negative Comments :{:.2f}%".format(
+                (vader_valuecounts[-1]/total_count)*100))
 
             # print("sentiment sums for textblob sentiment analysis:")
-            # textblob_valuecounts = df['sentiment_textblob'].value_counts()
+            textblob_valuecounts = df['sentiment_textblob'].value_counts()
             # print(textblob_valuecounts)
-            # print("Sentiments:")
-            # print("Neutral:", (textblob_valuecounts[0]/total_count)*100, '%')
-            # print("Positive:", (textblob_valuecounts[1]/total_count)*100, '%')
-            # print("Negative:", (textblob_valuecounts[-1]/total_count)*100, '%')
+            st.write("✔️")
+            st.write("Sentiments using TextBlob:")
+            st.write("Neutral Comments :{:.2f}% ".format(
+                (textblob_valuecounts[0]/total_count)*100))
+            st.write("Positive Comments :{:.2f}%".format(
+                (textblob_valuecounts[1]/total_count)*100))
+            st.write("Negative Comments :{:.2f}%".format(
+                (textblob_valuecounts[-1]/total_count)*100))
 
         else:
             st.error("Invalid YouTube URL. Please enter a valid URL.")
