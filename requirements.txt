@@ -1,0 +1,10 @@
+emoji
+pandas
+streamlit
+requests
+google-api-python-client 
+python-dotenv  
+vaderSentiment 
+langdetect 
+googletrans==4.0.0-rc1
+dotenv

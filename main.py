@@ -174,10 +174,11 @@ def main():
             st.write("Extracting video_id...")
 
             # # Load the .env file
-            load_dotenv()
+            # load_dotenv()
 
             # # Retrieve the API key from the .env file
-            api_key = os.getenv("YOUTUBE_API_KEY")
+            # api_key = os.getenv("YOUTUBE_API_KEY")
+            api_key = st.secrets("YOUTUBE_API_KEY")
             if not api_key:
                 raise ValueError("API key not found in .env file")
             # else:
