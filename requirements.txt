@@ -52,3 +52,4 @@ tzdata==2024.1
 uritemplate==4.1.1
 urllib3==2.2.2
 vaderSentiment==3.3.2
+wordcloud==1.9.3
