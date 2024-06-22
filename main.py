@@ -2,6 +2,8 @@ import os
 import re
 import emoji
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 import streamlit as st
 import requests
 from googleapiclient.discovery import build
@@ -244,27 +246,54 @@ def main():
             # print("sentiment sums for vader sentiment analysis:")
             vader_valuecounts = df['sentiment_vader'].value_counts()
             total_count = len(df)
-            # print(vader_valuecounts)
-            st.write("✔️")
-            st.write("Sentiments Using Vader:")
-            st.write("Neutral Comments :{:.2f}% ".format(
-                (vader_valuecounts[0]/total_count)*100))
-            st.write("Positive Comments :{:.2f}%".format(
-                (vader_valuecounts[1]/total_count)*100))
-            st.write("Negative Comments :{:.2f}%".format(
-                (vader_valuecounts[-1]/total_count)*100))
 
             # print("sentiment sums for textblob sentiment analysis:")
             textblob_valuecounts = df['sentiment_textblob'].value_counts()
             # print(textblob_valuecounts)
-            st.write("✔️")
-            st.write("Sentiments using TextBlob:")
-            st.write("Neutral Comments :{:.2f}% ".format(
-                (textblob_valuecounts[0]/total_count)*100))
-            st.write("Positive Comments :{:.2f}%".format(
-                (textblob_valuecounts[1]/total_count)*100))
-            st.write("Negative Comments :{:.2f}%".format(
-                (textblob_valuecounts[-1]/total_count)*100))
+
+            # Data
+            sentiments = ['Neutral Comments',
+                          'Positive Comments', 'Negative Comments']
+            vader_values = [round((vader_valuecounts[0]/total_count)*100), round(
+                (vader_valuecounts[1]/total_count)*100), round((vader_valuecounts[-1]/total_count)*100)]
+            textblob_values = [round((textblob_valuecounts[0]/total_count)*100), round(
+                (textblob_valuecounts[1]/total_count)*100), round((textblob_valuecounts[-1]/total_count)*100)]
+
+            # Position of the bars on the x-axis
+            x = np.arange(len(sentiments))
+
+            # Width of a bar
+            width = 0.35
+
+            # Create the bar chart
+            fig, ax = plt.subplots()
+
+            # Bars for Vader
+            bars1 = ax.bar(x - width/2, vader_values, width, label='Vader')
+
+            # Bars for TextBlob
+            bars2 = ax.bar(x + width/2, textblob_values,
+                           width, label='TextBlob')
+
+            # Adding labels
+            ax.set_xlabel('Sentiment Categories')
+            ax.set_ylabel('Percentage')
+            ax.set_title('Sentiment Analysis Using Vader and TextBlob')
+            ax.set_xticks(x)
+            ax.set_xticklabels(sentiments)
+            ax.legend()
+
+            # Adding the percentage labels inside the bars
+            for i, v in enumerate(vader_values):
+                ax.text(x[i] - width/2, v + 1,
+                        f'{v:.2f}%', ha='center', va='bottom')
+
+            for i, v in enumerate(textblob_values):
+                ax.text(x[i] + width/2, v + 1,
+                        f'{v:.2f}%', ha='center', va='bottom')
+
+            # Display the plot in Streamlit
+            st.pyplot(fig)
 
         else:
             st.error("Invalid YouTube URL. Please enter a valid URL.")
