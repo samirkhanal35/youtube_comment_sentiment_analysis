@@ -245,7 +245,7 @@ def main():
             # print(df[['Translated_Comment', 'sentiment_vader', 'sentiment_textblob']].head(10))
 
             # Generate and display word cloud for the cleaned comments
-            all_comments = ' '.join(df['Cleaned_Comment'])
+            all_comments = ' '.join(df['Translated_Comment'])
             wordcloud = WordCloud(
                 width=800, height=400, background_color='white').generate(all_comments)
 
