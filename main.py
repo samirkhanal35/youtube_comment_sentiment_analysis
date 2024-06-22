@@ -245,6 +245,7 @@ def main():
             # print(df[['Translated_Comment', 'sentiment_vader', 'sentiment_textblob']].head(10))
 
             # Generate and display word cloud for the cleaned comments
+            st.subheader("Word Cloud")
             all_comments = ' '.join(df['Translated_Comment'])
             wordcloud = WordCloud(
                 width=800, height=400, background_color='white').generate(all_comments)
@@ -252,8 +253,9 @@ def main():
             plt.figure(figsize=(10, 5))
             plt.imshow(wordcloud, interpolation='bilinear')
             plt.axis('off')
-            plt.title('Word Cloud of YouTube Comments')
-            plt.show()
+            st.pyplot(plt)
+
+            st.subheader("Sentiment Analysis")
 
             # print("sentiment sums for vader sentiment analysis:")
             vader_valuecounts = df['sentiment_vader'].value_counts()
