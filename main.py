@@ -11,6 +11,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from textblob import TextBlob
 from langdetect import detect, LangDetectException
 from googletrans import Translator
+from wordcloud import WordCloud
 from dotenv import load_dotenv
 
 # Function to validate YouTube URL
@@ -242,6 +243,17 @@ def main():
 
             # print("\nTranslated dataset with sentiments")
             # print(df[['Translated_Comment', 'sentiment_vader', 'sentiment_textblob']].head(10))
+
+            # Generate and display word cloud for the cleaned comments
+            all_comments = ' '.join(df['Cleaned_Comment'])
+            wordcloud = WordCloud(
+                width=800, height=400, background_color='white').generate(all_comments)
+
+            plt.figure(figsize=(10, 5))
+            plt.imshow(wordcloud, interpolation='bilinear')
+            plt.axis('off')
+            plt.title('Word Cloud of YouTube Comments')
+            plt.show()
 
             # print("sentiment sums for vader sentiment analysis:")
             vader_valuecounts = df['sentiment_vader'].value_counts()
