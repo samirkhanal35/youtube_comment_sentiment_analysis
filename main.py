@@ -59,7 +59,7 @@ def extract_video_id(youtube_url: int):
 # Function to extract and return comments
 
 
-def get_comments(video_id: str, api_key: str):
+def get_comments(video_id: str, api_key: str, number: int):
     comments = []
     # Create a Youtube resource object
     myYoutube = build('youtube', 'v3', developerKey=api_key)
@@ -67,7 +67,7 @@ def get_comments(video_id: str, api_key: str):
     # Retrieving youtube video comments
     request = myYoutube.commentThreads().list(
         part='snippet, replies',
-        maxResults=100,
+        maxResults=number,
         videoId=video_id,
         textFormat="plainText",
         order="relevance"
@@ -86,7 +86,7 @@ def get_comments(video_id: str, api_key: str):
                 part="snippet",
                 videoId=video_id,
                 textFormat="plainText",
-                maxResults=100,
+                maxResults=number,
                 pageToken=response['nextPageToken'],
                 order="relevance"
             )
@@ -177,11 +177,11 @@ def main():
             st.write("Extracting video_id...")
 
             # # Load the .env file
-            # load_dotenv()
+            load_dotenv()
 
             # # Retrieve the API key from the .env file
-            # api_key = os.getenv("API_KEY")
-            api_key = st.secrets["API_KEY"]
+            api_key = os.getenv("API_KEY")
+            # api_key = st.secrets["API_KEY"]
             if not api_key:
                 raise ValueError("API key not found in .env file")
             # else:
@@ -201,7 +201,7 @@ def main():
             # # getting all comments
             st.write("Extracting comments...")
             try:
-                all_comments = get_comments(video_id, api_key)
+                all_comments = get_comments(video_id, api_key, number)
             except:
                 st.error(
                     "The Youtube video has disabled the comments. So cannot scrape the comments.")
